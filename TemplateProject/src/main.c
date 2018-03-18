@@ -13,6 +13,7 @@
 
 void UserButtonInit(void);
 void SystemClock_Config(void);
+inline void SwapDiode(uint8_t cnt);
 void GenSound(uint32_t len);
 void DynamicInd(void);
 void GetTime16(uint8_t* time1);
@@ -27,7 +28,7 @@ static volatile const uint8_t digits[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 
 uint8_t time[4] = {0, 0, 0, 0};
 volatile uint8_t time16[4] = {0, 0, 0, 0};
 volatile int32_t mask[4]   = {1, 1, 1, 1};
-uint8_t alarm[4]  = {3, 0, 0, 0};
+uint8_t alarm[4]  = {9, 9, 9, 9};
 volatile uint32_t tick = 0;
 uint8_t num = 0;
 uint8_t flag = 0;
@@ -123,38 +124,43 @@ void UserButtonInit(void)
     NVIC_SetPriority(EXTI0_1_IRQn, 0);
 }
 
+inline void SwapDiode(uint8_t cnt)
+{
+    LL_GPIO_SetOutputPin(GPIOC, KATHODES);
+    LL_GPIO_ResetOutputPin(GPIOC, ANODICS);
+    switch (cnt)
+    {
+        case 0:
+            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_12);
+            LL_GPIO_SetOutputPin(GPIOC, mask[0]);
+            break;
+        case 1:
+            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_14);
+            LL_GPIO_SetOutputPin(GPIOC, mask[1] | LL_GPIO_PIN_3);
+            if (flag)
+                LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_3);
+            else
+                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_3);
+            break;
+        case 2:
+            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
+            LL_GPIO_SetOutputPin(GPIOC, mask[2]); 
+            break;
+        case 3:
+            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_6);
+            LL_GPIO_SetOutputPin(GPIOC, mask[3]); 
+            break;
+        default:
+            break;
+    }        
+}
+
 void DynamicInd(void)
 {
     uint8_t count = 0;
     while (1)
     {   
-        LL_GPIO_SetOutputPin(GPIOC, KATHODES);
-        LL_GPIO_ResetOutputPin(GPIOC, ANODICS);
-        switch (count)
-        {
-            case 0:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_12);
-                LL_GPIO_SetOutputPin(GPIOC, mask[0]);
-                break;
-            case 1:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_14);
-                LL_GPIO_SetOutputPin(GPIOC, mask[1] | LL_GPIO_PIN_3);
-                if (flag)
-                    LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_3);
-                else
-                    LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_3);
-                break;
-            case 2:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-                LL_GPIO_SetOutputPin(GPIOC, mask[2]); 
-                break;
-            case 3:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_6);
-                LL_GPIO_SetOutputPin(GPIOC, mask[3]); 
-                break;
-            default:
-                break;
-        }        
+        SwapDiode(count);
         count++;
         if (count == 4) count = 0;
         if (!flagALARM) LL_mDelay(1);
@@ -248,29 +254,7 @@ void ChangeTime(uint8_t* time1)
 {
     while (1)
     {
-        LL_GPIO_SetOutputPin(GPIOC, KATHODES);
-        LL_GPIO_ResetOutputPin(GPIOC, ANODICS);
-        switch (num)
-        {
-            case 0:
-               LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_12);
-               LL_GPIO_SetOutputPin(GPIOC, mask[0]);
-                break;
-            case 1:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_14);
-                LL_GPIO_SetOutputPin(GPIOC, mask[1] | LL_GPIO_PIN_3);
-                break;
-            case 2:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-                LL_GPIO_SetOutputPin(GPIOC, mask[2]); 
-                break;
-            case 3:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_6);
-                LL_GPIO_SetOutputPin(GPIOC, mask[3]); 
-                break;
-            default:
-                break;
-        }
+        SwapDiode(num);
         while (1)
         {
             if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))
@@ -339,29 +323,7 @@ void ShowAlarm(uint8_t* time1)
   
     while (i)
     {
-        LL_GPIO_SetOutputPin(GPIOC, KATHODES);
-        LL_GPIO_ResetOutputPin(GPIOC, ANODICS);
-        switch (num)
-        {
-            case 0:
-               LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_12);
-               LL_GPIO_SetOutputPin(GPIOC, mask[0]);
-                break;
-            case 1:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_14);
-                LL_GPIO_SetOutputPin(GPIOC, mask[1] | LL_GPIO_PIN_3);
-                break;
-            case 2:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-                LL_GPIO_SetOutputPin(GPIOC, mask[2]); 
-                break;
-            case 3:
-                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_6);
-                LL_GPIO_SetOutputPin(GPIOC, mask[3]); 
-                break;
-            default:
-                break;
-        }
+        SwapDiode(num);
         num++;
         if (num == 4) num = 0;    
         i--;
@@ -386,7 +348,7 @@ void SVC_Handler(void)
 void PendSV_Handler(void) 
 {
 }
-//менять флаг зажигания
+
 void SysTick_Handler(void) 
 {
     tick++;
@@ -415,16 +377,17 @@ void EXTI0_1_IRQHandler(void)
     if (flagALARM)
     {
         flagALARM = 0;
+        LL_mDelay(200);
         goto exit;    
-    }                                           //одно нажатие - установка времени                           
+    }                                                                      
     LL_GPIO_SetOutputPin(GPIOC, KATHODES);
     GenSound(35);
     LL_mDelay(500);
-    if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))     //два нажатия - установка будильника
+    if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))     
     {
         GenSound(70);
         LL_mDelay(500);
-        if (LL_GPIO_IsInputPinSet(GPIOA, 0b01)) //зажим - показать время будильника 
+        if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))  
         {
             GenSound(140);
             ShowAlarm(alarm);
