@@ -168,7 +168,6 @@ void DynamicInd(void)
         {
             NVIC_DisableIRQ(EXTI0_1_IRQn);
             ChangeTime(time);
-            LL_mDelay(200);
             NVIC_EnableIRQ(EXTI0_1_IRQn);
             time_change = 0;
             access = 0;
@@ -177,7 +176,6 @@ void DynamicInd(void)
         {
             NVIC_DisableIRQ(EXTI0_1_IRQn);
             SetAlarm(alarm);
-            LL_mDelay(200);
             NVIC_EnableIRQ(EXTI0_1_IRQn);
             alarm_set = 0;
             access = 0;
@@ -186,7 +184,6 @@ void DynamicInd(void)
         {
             NVIC_DisableIRQ(EXTI0_1_IRQn);
             ShowAlarm(alarm);
-            LL_mDelay(200);
             NVIC_EnableIRQ(EXTI0_1_IRQn);
             alarm_show = 0;
             access = 0;
