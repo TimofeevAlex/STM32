@@ -412,27 +412,27 @@ void EXTI0_1_IRQHandler(void)
     }   
     if (!access)
     { 
-    access++;                                                                  
-    LL_GPIO_SetOutputPin(GPIOC, KATHODES);
-    GenSound(35);
-    LL_mDelay(500);
-    if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))     
-    {
-        GenSound(70);
+        access++;                                                                  
+        LL_GPIO_SetOutputPin(GPIOC, KATHODES);
+        GenSound(35);
         LL_mDelay(500);
-        if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))  
+        if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))     
         {
-            GenSound(140);
-            if (alarm_show == 0)
-                alarm_show++;
-            goto exit;
+            GenSound(70);
+            LL_mDelay(500);
+            if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))  
+            {
+                GenSound(140);
+                if (alarm_show == 0)
+                    alarm_show++;
+                goto exit;
+            }
+            if (alarm_set == 0)
+                alarm_set++;
+            goto exit;    
         }
-        if (alarm_set == 0)
-            alarm_set++;
-        goto exit;    
-    }
-    if (time_change == 0)
-        time_change++;
+        if (time_change == 0)
+            time_change++;
     }    
     exit:
         LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);    
