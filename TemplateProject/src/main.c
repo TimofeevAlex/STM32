@@ -28,11 +28,15 @@ static volatile const uint8_t digits[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 
 uint8_t time[4] = {0, 0, 0, 0};
 volatile uint8_t time16[4] = {0, 0, 0, 0};
 volatile int32_t mask[4]   = {1, 1, 1, 1};
-uint8_t alarm[4]  = {9, 9, 9, 9};
+uint8_t alarm[4]  = {0, 0, 0, 9};
 volatile uint32_t tick = 0;
 uint8_t num = 0;
 uint8_t flag = 0;
 uint8_t flagALARM = 0;
+uint8_t alarm_show = 0;
+uint8_t alarm_set = 0;
+uint8_t time_change = 0;
+uint8_t access = 0;
 /*************************************************************/
 /*Connection diagram:                                        */
 /*           K1        K2        K3        K4                */
@@ -159,7 +163,34 @@ void DynamicInd(void)
 {
     uint8_t count = 0;
     while (1)
-    {   
+    {  
+        if (time_change)
+        {
+            NVIC_DisableIRQ(EXTI0_1_IRQn);
+            ChangeTime(time);
+            LL_mDelay(200);
+            NVIC_EnableIRQ(EXTI0_1_IRQn);
+            time_change = 0;
+            access = 0;
+        }
+        if (alarm_set)
+        {
+            NVIC_DisableIRQ(EXTI0_1_IRQn);
+            SetAlarm(alarm);
+            LL_mDelay(200);
+            NVIC_EnableIRQ(EXTI0_1_IRQn);
+            alarm_set = 0;
+            access = 0;
+        }
+        if (alarm_show)
+        {
+            NVIC_DisableIRQ(EXTI0_1_IRQn);
+            ShowAlarm(alarm);
+            LL_mDelay(200);
+            NVIC_EnableIRQ(EXTI0_1_IRQn);
+            alarm_show = 0;
+            access = 0;
+        } 
         SwapDiode(count);
         count++;
         if (count == 4) count = 0;
@@ -277,7 +308,7 @@ void ChangeTime(uint8_t* time1)
             num = 0;
             break;
         }       
-    }     
+    }   
 }
 
 void DigIncr(uint32_t num, uint8_t* time1)
@@ -352,7 +383,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void) 
 {
     tick++;
-    if (tick == 60000)  
+    if (tick == 60000 & !access & !alarm_set & !alarm_set & !time_change)  
     {
         TimeIncr(time);
         GetTime16(time);
@@ -379,7 +410,10 @@ void EXTI0_1_IRQHandler(void)
         flagALARM = 0;
         LL_mDelay(200);
         goto exit;    
-    }                                                                      
+    }   
+    if (!access)
+    { 
+    access++;                                                                  
     LL_GPIO_SetOutputPin(GPIOC, KATHODES);
     GenSound(35);
     LL_mDelay(500);
@@ -390,13 +424,17 @@ void EXTI0_1_IRQHandler(void)
         if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))  
         {
             GenSound(140);
-            ShowAlarm(alarm);
+            if (alarm_show == 0)
+                alarm_show++;
             goto exit;
         }
-        SetAlarm(alarm);
+        if (alarm_set == 0)
+            alarm_set++;
         goto exit;    
     }
-    ChangeTime(time);
+    if (time_change == 0)
+        time_change++;
+    }    
     exit:
         LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);    
 }        
