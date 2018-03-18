@@ -287,11 +287,13 @@ void ChangeTime(uint8_t* time1)
         {
             if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))
             {
+                GenSound(30);
                 LL_mDelay(300);
                 if ((LL_GPIO_IsInputPinSet(GPIOA, 0b01)))
                 {
                     num++;
-                    LL_mDelay(400);  
+                    GenSound(70);
+                    LL_mDelay(300);  
                     break;  
                 }
                 DigIncr(num, time1);
