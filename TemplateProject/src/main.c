@@ -4,7 +4,7 @@
 #include "stm32f0xx_ll_system.h"
 #include "stm32f0xx_ll_utils.h"
 #include "stm32f0xx_ll_exti.h"
-//короче по тикам мерять время и по ним выходить
+
 #define ANODICS   LL_GPIO_PIN_1  | LL_GPIO_PIN_2 | \
                   LL_GPIO_PIN_3  | LL_GPIO_PIN_4 | \
                   LL_GPIO_PIN_5  | LL_GPIO_PIN_7 | \
