@@ -4,7 +4,7 @@
 #include "stm32f0xx_ll_system.h"
 #include "stm32f0xx_ll_utils.h"
 #include "stm32f0xx_ll_exti.h"
-
+//короче по тикам мерять время и по ним выходить
 #define ANODICS   LL_GPIO_PIN_1  | LL_GPIO_PIN_2 | \
                   LL_GPIO_PIN_3  | LL_GPIO_PIN_4 | \
                   LL_GPIO_PIN_5  | LL_GPIO_PIN_7 | \
@@ -31,12 +31,14 @@ volatile uint8_t time16[4] = {0, 0, 0, 0};
 volatile int32_t mask[4]   = {1, 1, 1, 1};
 uint8_t alarm[4]  = {0, 0, 0, 0};
 volatile uint32_t tick = 0;
+volatile uint32_t tick1 = 0;
 uint8_t num = 0;
 uint8_t flag = 0;
 uint8_t flagALARM = 0;
 uint8_t access = 0;
 uint8_t is_button = 0;
 uint8_t first = 0;
+int32_t curr = 0;
 /*************************************************************/
 /*Connection diagram:                                        */
 /*           K1        K2        K3        K4                */
@@ -164,7 +166,7 @@ void ButtonHandler(void)
     if (flagALARM)
     {
         flagALARM = 0;
-        LL_mDelay(200);
+        GenSound(70);
         return;    
     }   
     if (!access)
@@ -172,23 +174,20 @@ void ButtonHandler(void)
         access++;                                                                  
         LL_GPIO_SetOutputPin(GPIOC, KATHODES);
         GenSound(35);
-        LL_mDelay(500);
-        if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))     
+        switch (is_button)
         {
-            GenSound(70);
-            LL_mDelay(500);
-            if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))  
-            {
-                GenSound(140);
+            case 1:
+                ChangeTime(time);
+                break;
+            case 2: 
+                SetAlarm(alarm);
+                break;                   
+            case 3:        
                 ShowAlarm(alarm);
-                access = 0;
-                return;
-            }
-            SetAlarm(alarm);
-            access = 0;
-            return;    
+                break;                    
+            default:
+                break;
         }
-        ChangeTime(time);
         access = 0;
     }       
 }
@@ -197,20 +196,21 @@ void DynamicInd(void)
 {
     uint8_t count = 0;
     while (1)
-    {  
-        if (is_button == 1)
+    {   
+        if (tick == 0) curr -= 60000;
+        if (is_button && ((tick - curr) >= 2000))
         {
             NVIC_DisableIRQ(EXTI0_1_IRQn);
             ButtonHandler();
             is_button = 0;
+            curr = 0;
             NVIC_EnableIRQ(EXTI0_1_IRQn);
         }        
         SwapDiode(count);
         count++;
         if (count == 4) count = 0;
-        if (!flagALARM) LL_mDelay(1);
-        else GenSound(5);
-    };   
+        if (flagALARM) GenSound(5);
+    }   
 }
 
 void TimeIncr(uint8_t* time1)
@@ -297,26 +297,38 @@ void GenSound(uint32_t len)
 
 void ChangeTime(uint8_t* time1)
 {
+    uint8_t op = 0;
+    int32_t curr1 = 0;
     while (1)
     {
         SwapDiode(num);
         while (1)
         {
-            if (LL_GPIO_IsInputPinSet(GPIOA, 0b01))
+            if (op == 0) curr1 = tick;
+            else if (tick == 0) curr1 -= 60000;
+            if (LL_GPIO_IsInputPinSet(GPIOA, 0b01) && ((tick - curr1) < 1000) && op == 0)
             {
-                GenSound(30);
-                LL_mDelay(300);
-                if ((LL_GPIO_IsInputPinSet(GPIOA, 0b01)))
-                {
-                    num++;
-                    GenSound(70);
-                    LL_mDelay(300);  
-                    break;  
-                }
+                GenSound(35);
+                op++;
+            }
+            if ((LL_GPIO_IsInputPinSet(GPIOA, 0b01)) && ((tick - curr1) >= 1000) && op == 1)
+            {
+                GenSound(140);
+                op++; 
+            }
+            if (op == 1 && ((tick - curr1) >= 2000))
+            {
                 DigIncr(num, time1);
                 GetTime16(time1);
                 SetTime();
+                op = 0;
                 break;
+            }
+            if (op == 2 && ((tick - curr1) >= 2000))
+            {
+                num++;
+                op = 0;
+                break;   
             }
         }
         if (num == 4) 
@@ -400,11 +412,12 @@ void PendSV_Handler(void)
 void SysTick_Handler(void) 
 {
     tick++;
+    tick1++;
     if (tick == 60000 & !access)  
     {
         TimeIncr(time);
         GetTime16(time);
-        SetTime();             
+        SetTime();
         tick = 0;
     } 
     if ((tick % 500) == 0) 
@@ -423,5 +436,6 @@ void SysTick_Handler(void)
 void EXTI0_1_IRQHandler(void)
 {                                         
     is_button++;
+    if (is_button == 1) curr = tick;
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);    
 }        
